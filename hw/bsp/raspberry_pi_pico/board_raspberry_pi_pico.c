@@ -27,15 +27,17 @@
 #include "pico/stdlib.h"
 #include "../board.h"
 
-#ifndef LED_PIN
+#if !defined(LED_PIN) && defined(PICO_DEFAULT_LED_PIN)
 #define LED_PIN PICO_DEFAULT_LED_PIN
 #endif
 
 void board_init(void)
 {
     setup_default_uart();
+#ifdef LED_PIN
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, 1);
+#endif
 
     // Button
 
@@ -66,7 +68,9 @@ void board_init(void)
 
 void board_led_write(bool state)
 {
+#ifdef LED_PIN
     gpio_put(LED_PIN, state);
+#endif
 }
 
 uint32_t board_button_read(void)
@@ -76,19 +80,26 @@ uint32_t board_button_read(void)
 
 int board_uart_read(uint8_t* buf, int len)
 {
+#ifdef uart_default
     for(int i=0;i<len;i++) {
         buf[i] = uart_getc(uart_default);
     }
+    return len;
+#else
     return 0;
+#endif
 }
 
 int board_uart_write(void const * buf, int len)
 {
-//  UART_Send(BOARD_UART_PORT, &c, 1, BLOCKING);
+#ifdef uart_default
     for(int i=0;i<len;i++) {
         uart_putc(uart_default, ((char *)buf)[i]);
     }
+    return len;
+#else
     return 0;
+#endif
 }
 
 #if CFG_TUSB_OS == OPT_OS_NONE
