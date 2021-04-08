@@ -294,7 +294,6 @@ static void _hw_endpoint_init(struct hw_endpoint *ep, uint8_t dev_addr, uint8_t 
     uint8_t const num = tu_edpt_number(ep_addr);
     tusb_dir_t const dir = tu_edpt_dir(ep_addr);
 
-    bool in = ep_addr & TUSB_DIR_IN_MASK;
     ep->ep_addr = ep_addr;
     ep->dev_addr = dev_addr;
 
@@ -487,7 +486,6 @@ bool hcd_setup_send(uint8_t rhport, uint8_t dev_addr, uint8_t const setup_packet
     // EP0 out
     _hw_endpoint_init(ep, dev_addr, 0x00, ep->wMaxPacketSize, 0, 0);
     assert(ep->configured);
-    assert(ep->num == 0 && !ep->in);
     ep->total_len = 8;
     ep->transfer_size = 8;
     ep->active = true;
