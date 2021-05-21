@@ -47,6 +47,13 @@
 #define usb_hw_set hw_set_alias(usb_hw)
 #define usb_hw_clear hw_clear_alias(usb_hw)
 
+// The rhport argument is not used in this driver. It should always be set to 0.
+#ifndef NDEBUG
+  #define rhport_ignore(rhport) (assert(rhport == 0))
+#else
+  #define rhport_ignore(rhport) ((void)rhport)
+#endif
+
 // Init these in dcd_init
 static uint8_t assigned_address;
 static uint8_t *next_buffer_ptr;
@@ -348,7 +355,6 @@ static void dcd_rp2040_irq(void)
 void dcd_init (uint8_t rhport)
 {
     pico_trace("dcd_init %d\n", rhport);
-    assert(rhport == 0);
 
     // Reset hardware to default state
     rp2040_usb_init();
@@ -370,7 +376,7 @@ void dcd_init (uint8_t rhport)
 
     // Enable individual controller IRQS here. Processor interrupt enable will be used
     // for the global interrupt enable...
-    usb_hw->sie_ctrl = USB_SIE_CTRL_EP0_INT_1BUF_BITS; 
+    usb_hw->sie_ctrl = USB_SIE_CTRL_EP0_INT_1BUF_BITS;
     usb_hw->inte     = USB_INTS_BUFF_STATUS_BITS | USB_INTS_BUS_RESET_BITS | USB_INTS_SETUP_REQ_BITS;
 
     dcd_connect(rhport);
@@ -378,20 +384,20 @@ void dcd_init (uint8_t rhport)
 
 void dcd_int_enable(uint8_t rhport)
 {
-    assert(rhport == 0);
+    rhport_ignore(rhport);
     irq_set_enabled(USBCTRL_IRQ, true);
 }
 
 void dcd_int_disable(uint8_t rhport)
 {
-    assert(rhport == 0);
+    rhport_ignore(rhport);
     irq_set_enabled(USBCTRL_IRQ, false);
 }
 
 void dcd_set_address (uint8_t rhport, uint8_t dev_addr)
 {
+    rhport_ignore(rhport);
     pico_trace("dcd_set_address %d %d\n", rhport, dev_addr);
-    assert(rhport == 0);
 
     // Can't set device address in hardware until status xfer has complete
     assigned_address = dev_addr;
@@ -401,23 +407,23 @@ void dcd_set_address (uint8_t rhport, uint8_t dev_addr)
 
 void dcd_remote_wakeup(uint8_t rhport)
 {
+    rhport_ignore(rhport);
     panic("dcd_remote_wakeup %d\n", rhport);
-    assert(rhport == 0);
 }
 
 // disconnect by disabling internal pull-up resistor on D+/D-
 void dcd_disconnect(uint8_t rhport)
 {
+    rhport_ignore(rhport);
     pico_info("dcd_disconnect %d\n", rhport);
-    assert(rhport == 0);
     usb_hw_clear->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
 }
 
 // connect by enabling internal pull-up resistor on D+/D-
 void dcd_connect(uint8_t rhport)
 {
+    rhport_ignore(rhport);
     pico_info("dcd_connect %d\n", rhport);
-    assert(rhport == 0);
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
 }
 
@@ -427,8 +433,8 @@ void dcd_connect(uint8_t rhport)
 
 void dcd_edpt0_status_complete(uint8_t rhport, tusb_control_request_t const * request)
 {
+    rhport_ignore(rhport);
     pico_trace("dcd_edpt0_status_complete %d\n", rhport);
-    assert(rhport == 0);
 
     if (request->bmRequestType_bit.recipient == TUSB_REQ_RCPT_DEVICE &&
         request->bmRequestType_bit.type == TUSB_REQ_TYPE_STANDARD &&
@@ -443,15 +449,15 @@ void dcd_edpt0_status_complete(uint8_t rhport, tusb_control_request_t const * re
 
 bool dcd_edpt_open (uint8_t rhport, tusb_desc_endpoint_t const * desc_edpt)
 {
+    rhport_ignore(rhport);
     pico_info("dcd_edpt_open %d %02x\n", rhport, desc_edpt->bEndpointAddress);
-    assert(rhport == 0);
     hw_endpoint_init(desc_edpt->bEndpointAddress, desc_edpt->wMaxPacketSize.size, desc_edpt->bmAttributes.xfer);
     return true;
 }
 
 bool dcd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t total_bytes)
 {
-    assert(rhport == 0);
+    rhport_ignore(rhport);
     // True means start new xfer
     hw_endpoint_xfer(ep_addr, buffer, total_bytes, true);
     return true;
@@ -459,21 +465,23 @@ bool dcd_edpt_xfer(uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t t
 
 void dcd_edpt_stall (uint8_t rhport, uint8_t ep_addr)
 {
+    rhport_ignore(rhport);
     pico_trace("dcd_edpt_stall %d %02x\n", rhport, ep_addr);
-    assert(rhport == 0);
     hw_endpoint_stall(ep_addr);
 }
 
 void dcd_edpt_clear_stall (uint8_t rhport, uint8_t ep_addr)
 {
+    rhport_ignore(rhport);
     pico_trace("dcd_edpt_clear_stall %d %02x\n", rhport, ep_addr);
-    assert(rhport == 0);
     hw_endpoint_clear_stall(ep_addr);
 }
 
 
 void dcd_edpt_close (uint8_t rhport, uint8_t ep_addr)
 {
+    rhport_ignore(rhport);
+    (void) ep_addr;
     // usbd.c says: In progress transfers on this EP may be delivered after this call
     pico_trace("dcd_edpt_close %d %02x\n", rhport, ep_addr);
 
